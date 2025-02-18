@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"bufio"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
@@ -19,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/manifoldco/promptui"
 )
 
 var (
@@ -27,38 +26,155 @@ var (
 	cloudfrontDescription string
 	region                string
 	profileName           string
+	deploymentType        string
 )
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
+	// Custom styling for better visibility
 
-	// Prompt for AWS profile
-	fmt.Print("🔑 Enter AWS profile name (press Enter for default): ")
-	profileName, _ = reader.ReadString('\n')
-	profileName = strings.TrimSpace(profileName)
+	fmt.Println("🚀 Welcome to the CloudFront Deployment Tool!")
 
-	// Prompt for bucket name
-	fmt.Print("🪣 Enter S3 bucket name: ")
-	bucketName, _ = reader.ReadString('\n')
-	bucketName = strings.TrimSpace(bucketName)
-
-	// Prompt for website folder path
-	fmt.Print("📂 Enter local path to your website files: ")
-	websiteFolderPath, _ = reader.ReadString('\n')
-	websiteFolderPath = strings.TrimSpace(websiteFolderPath)
-
-	// Prompt for CloudFront description
-	fmt.Print("💬 Enter CloudFront distribution description (press Enter for default): ")
-	cloudfrontDescription, _ = reader.ReadString('\n')
-	cloudfrontDescription = strings.TrimSpace(cloudfrontDescription)
-	if cloudfrontDescription == "" {
-		cloudfrontDescription = fmt.Sprintf("CloudFront distribution for %s", bucketName)
+	// Interactive deployment type selection
+	deployTypePrompt := promptui.Select{
+		Label: "Select deployment type",
+		Items: []string{
+			"Static Website (Basic)",
+			"Single Page Application (SPA)",
+		},
+		Size: 4,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . | cyan }}?",
+			Active:   "➜ {{ . | cyan }}",
+			Inactive: "  {{ . }}",
+			Selected: "✔ {{ . | green }}",
+		},
+		HideHelp: true,
 	}
 
-	// Prompt for AWS region
-	fmt.Print("🌐 Enter AWS region (e.g., us-east-1): ")
-	region, _ = reader.ReadString('\n')
-	region = strings.TrimSpace(region)
+	index, _, err := deployTypePrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v", err)
+	}
+	deploymentType = fmt.Sprintf("%d", index+1)
+
+	templates := &promptui.PromptTemplates{
+		Prompt:  "{{ . | cyan }} ",
+		Valid:   "{{ . | green }} ",
+		Invalid: "{{ . | red }} ",
+		Success: "",
+	}
+
+	// AWS Profile prompt
+	profilePrompt := promptui.Prompt{
+		Label:     "🔑 AWS Profile: ",
+		Default:   "default",
+		Templates: templates,
+		AllowEdit: true,
+		Validate: func(input string) error {
+			if strings.TrimSpace(input) == "" {
+				return fmt.Errorf("profile name cannot be empty")
+			}
+			return nil
+		},
+		Pointer: promptui.PipeCursor,
+	}
+	profileName, err = profilePrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v", err)
+	}
+
+	// Bucket name prompt
+	bucketPrompt := promptui.Prompt{
+		Label:     "🪣 S3 Bucket Name: ",
+		Templates: templates,
+		Validate: func(input string) error {
+			input = strings.TrimSpace(input)
+			if input == "" {
+				return fmt.Errorf("bucket name cannot be empty")
+			}
+			if len(input) < 3 || len(input) > 63 {
+				return fmt.Errorf("bucket name must be between 3 and 63 characters")
+			}
+			return nil
+		},
+		Pointer: promptui.PipeCursor,
+	}
+	bucketName, err = bucketPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v", err)
+	}
+
+	// Website folder path prompt
+	folderPrompt := promptui.Prompt{
+		Label:     "📂 Website Files Path: ",
+		Templates: templates,
+		Validate: func(input string) error {
+			if input = strings.TrimSpace(input); input == "" {
+				return fmt.Errorf("path cannot be empty")
+			}
+			if fi, err := os.Stat(input); err != nil {
+				if os.IsNotExist(err) {
+					return fmt.Errorf("folder does not exist")
+				}
+				return fmt.Errorf("error accessing path: %v", err)
+			} else if !fi.IsDir() {
+				return fmt.Errorf("path must be a directory")
+			}
+			return nil
+		},
+		Pointer: promptui.PipeCursor,
+	}
+	websiteFolderPath, err = folderPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v", err)
+	}
+
+	// CloudFront description prompt
+	descPrompt := promptui.Prompt{
+		Label:     "💬 CloudFront Description: ",
+		Default:   fmt.Sprintf("Distribution for %s", bucketName),
+		Templates: templates,
+		Validate: func(input string) error {
+			if strings.TrimSpace(input) == "" {
+				return fmt.Errorf("description cannot be empty")
+			}
+			return nil
+		},
+		Pointer: promptui.PipeCursor,
+	}
+	cloudfrontDescription, err = descPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v", err)
+	}
+
+	// Region prompt
+	regionPrompt := promptui.Prompt{
+		Label:     "🌐 AWS Region: ",
+		Default:   "us-east-1",
+		Templates: templates,
+		Validate: func(input string) error {
+			if strings.TrimSpace(input) == "" {
+				return fmt.Errorf("region cannot be empty")
+			}
+			return nil
+		},
+		Pointer: promptui.PipeCursor,
+	}
+	region, err = regionPrompt.Run()
+	if err != nil {
+		log.Fatalf("Prompt failed: %v", err)
+	}
+
+	// Show configuration summary
+	fmt.Println("--------------------------------")
+	fmt.Printf("\n%s\n", "Configuration Summary:")
+	fmt.Printf("⚙️ Deployment Type: %s\n", deploymentType)
+	fmt.Printf("🔑 AWS Profile: %s\n", profileName)
+	fmt.Printf("🪣 S3 Bucket: %s\n", bucketName)
+	fmt.Printf("📂 Website Path: %s\n", websiteFolderPath)
+	fmt.Printf("💬 CloudFront Description: %s\n", cloudfrontDescription)
+	fmt.Printf("🌐 Region: %s\n\n", region)
+	fmt.Println("--------------------------------")
 
 	// Validate inputs
 	if bucketName == "" || websiteFolderPath == "" || region == "" {
@@ -67,7 +183,6 @@ func main() {
 
 	// Update AWS configuration to include profile option
 	var cfg aws.Config
-	var err error
 	if profileName != "" {
 		cfg, err = config.LoadDefaultConfig(context.TODO(),
 			config.WithRegion(region),
@@ -87,7 +202,7 @@ func main() {
 	cfClient := cloudfront.NewFromConfig(cfg)
 	iamClient := iam.NewFromConfig(cfg)
 
-	// Create S3 bucket
+	// 1. Create S3 bucket first
 	fmt.Printf("📦 Creating S3 bucket '%s'...\n", bucketName)
 	bucket, err := createS3Bucket(context.TODO(), s3Client)
 	if err != nil {
@@ -95,7 +210,15 @@ func main() {
 	}
 	fmt.Printf("✅ S3 bucket created successfully\n\n")
 
-	// Create Origin Access Control
+	// 2. Upload website files
+	fmt.Printf("📤 Uploading website files...\n")
+	err = uploadWebsiteFiles(context.TODO(), s3Client)
+	if err != nil {
+		log.Fatalf("Failed to upload website files: %v", err)
+	}
+	fmt.Printf("✅ Website files uploaded successfully\n\n")
+
+	// 3. Create Origin Access Control
 	fmt.Printf("🔒 Creating Origin Access Control...\n")
 	oacId, err := createOriginAccessControl(context.TODO(), cfClient)
 	if err != nil {
@@ -103,7 +226,7 @@ func main() {
 	}
 	fmt.Printf("✅ Origin Access Control created successfully\n\n")
 
-	// Create CloudFront distribution
+	// 4. Create CloudFront distribution
 	fmt.Printf("☁️  Creating CloudFront distribution...\n")
 	distribution, err := createCloudFrontDistribution(context.TODO(), cfClient, bucket, oacId)
 	if err != nil {
@@ -111,21 +234,13 @@ func main() {
 	}
 	fmt.Printf("✅ CloudFront distribution created successfully\n\n")
 
-	// Create and attach bucket policy
+	// 5. Create and attach bucket policy
 	fmt.Printf("📜 Attaching bucket policy...\n")
 	err = attachBucketPolicy(context.TODO(), s3Client, iamClient, bucket, distribution.Id)
 	if err != nil {
 		log.Fatalf("Failed to attach bucket policy: %v", err)
 	}
 	fmt.Printf("✅ Bucket policy attached successfully\n\n")
-
-	// Upload website files
-	fmt.Printf("📤 Uploading website files...\n")
-	err = uploadWebsiteFiles(context.TODO(), s3Client)
-	if err != nil {
-		log.Fatalf("Failed to upload website files: %v", err)
-	}
-	fmt.Printf("✅ Website files uploaded successfully\n\n")
 
 	fmt.Printf("🎉 Deployment completed successfully!\n")
 	fmt.Printf("📋 Summary:\n")
@@ -187,49 +302,56 @@ func createOriginAccessControl(ctx context.Context, client *cloudfront.Client) (
 }
 
 func createCloudFrontDistribution(ctx context.Context, client *cloudfront.Client, bucketName, oacId *string) (*types.Distribution, error) {
-	resp, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{
-		DistributionConfig: &types.DistributionConfig{
-			CallerReference:    aws.String(fmt.Sprintf("cli-%d", time.Now().Unix())),
-			Comment:           aws.String(cloudfrontDescription),
-			Enabled:           aws.Bool(true),
-			IsIPV6Enabled:     aws.Bool(true),
-			Origins: &types.Origins{
-				Items: []types.Origin{
-					{
-						DomainName:              aws.String(fmt.Sprintf("%s.s3.%s.amazonaws.com", *bucketName, region)),
-						Id:                      aws.String("S3Origin"),
-						OriginAccessControlId:   oacId,
-						S3OriginConfig:          &types.S3OriginConfig{
-							OriginAccessIdentity: aws.String(""),
-						},
+	distConfig := &types.DistributionConfig{
+		CallerReference:    aws.String(fmt.Sprintf("cli-%d", time.Now().Unix())),
+		Comment:           aws.String(cloudfrontDescription),
+		Enabled:           aws.Bool(true),
+		IsIPV6Enabled:     aws.Bool(true),
+		Origins: &types.Origins{
+			Items: []types.Origin{
+				{
+					DomainName:              aws.String(fmt.Sprintf("%s.s3.%s.amazonaws.com", *bucketName, region)),
+					Id:                      aws.String("S3Origin"),
+					OriginAccessControlId:   oacId,
+					S3OriginConfig:          &types.S3OriginConfig{
+						OriginAccessIdentity: aws.String(""),
 					},
 				},
-				Quantity: aws.Int32(1),
 			},
-			DefaultCacheBehavior: &types.DefaultCacheBehavior{
-				TargetOriginId:       aws.String("S3Origin"),
-				ViewerProtocolPolicy: types.ViewerProtocolPolicyRedirectToHttps,
-				Compress:             aws.Bool(true),
-				CachePolicyId:        aws.String("658327ea-f89d-4fab-a63d-7e88639e58f6"),
-			},
-			CustomErrorResponses: &types.CustomErrorResponses{
-				Items: []types.CustomErrorResponse{
-					{
-						ErrorCode:          aws.Int32(403),
-						ResponseCode:       aws.String("200"),
-						ResponsePagePath:   aws.String("/index.html"),
-						ErrorCachingMinTTL: aws.Int64(0),
-					},
-					{
-						ErrorCode:          aws.Int32(404),
-						ResponseCode:       aws.String("200"),
-						ResponsePagePath:   aws.String("/index.html"),
-						ErrorCachingMinTTL: aws.Int64(0),
-					},
-				},
-				Quantity: aws.Int32(2),
-			},
+			Quantity: aws.Int32(1),
 		},
+		DefaultCacheBehavior: &types.DefaultCacheBehavior{
+			TargetOriginId:       aws.String("S3Origin"),
+			ViewerProtocolPolicy: types.ViewerProtocolPolicyRedirectToHttps,
+			Compress:             aws.Bool(true),
+			CachePolicyId:        aws.String("658327ea-f89d-4fab-a63d-7e88639e58f6"),
+		},
+		DefaultRootObject: aws.String("index.html"),
+	}
+
+	// Add custom error responses for SPA
+	if deploymentType == "2" {
+		distConfig.CustomErrorResponses = &types.CustomErrorResponses{
+			Items: []types.CustomErrorResponse{
+				{
+					ErrorCode:          aws.Int32(403),
+					ResponseCode:       aws.String("200"),
+					ResponsePagePath:   aws.String("/index.html"),
+					ErrorCachingMinTTL: aws.Int64(0),
+				},
+				{
+					ErrorCode:          aws.Int32(404),
+					ResponseCode:       aws.String("200"),
+					ResponsePagePath:   aws.String("/index.html"),
+					ErrorCachingMinTTL: aws.Int64(0),
+				},
+			},
+			Quantity: aws.Int32(2),
+		}
+	}
+
+	resp, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{
+		DistributionConfig: distConfig,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create distribution: %w", err)
@@ -284,11 +406,14 @@ func uploadWebsiteFiles(ctx context.Context, client *s3.Client) error {
 			return nil
 		}
 
-		// Calculate the key (path relative to the website folder)
+		// Calculate relative path from the base directory
 		relPath, err := filepath.Rel(absPath, path)
 		if err != nil {
 			return fmt.Errorf("failed to get relative path: %w", err)
 		}
+
+		// Use forward slashes for S3 keys
+		key := filepath.ToSlash(relPath)
 
 		// Read file content
 		content, err := os.ReadFile(path)
@@ -297,15 +422,15 @@ func uploadWebsiteFiles(ctx context.Context, client *s3.Client) error {
 		}
 
 		// Upload file to S3
-		fmt.Printf("   Uploading: %s\n", relPath)
+		fmt.Printf("   Uploading: %s\n", key)
 		_, err = client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket:       aws.String(bucketName),
-			Key:         aws.String(relPath),
+			Key:         aws.String(key),
 			Body:        bytes.NewReader(content),
 			CacheControl: aws.String("public, max-age=31536000, s-maxage=31536000"),
 		})
 		if err != nil {
-			return fmt.Errorf("failed to upload file %s: %w", relPath, err)
+			return fmt.Errorf("failed to upload file %s: %w", key, err)
 		}
 
 		fileCount++
