@@ -2,6 +2,8 @@
 
 A Go-based CLI tool that automates the deployment of static websites to AWS using S3 and CloudFront.
 
+![Deploy Static Site Demo](deploy-static-demo.gif)
+
 ## Prerequisites
 
 - Go 1.24 or later
