@@ -12,7 +12,7 @@ A Go-based CLI tool that automates the deployment of static websites to AWS usin
   - Create and manage IAM policies
   - Create Origin Access Control
 
-## Configuration
+## Installation
 
 1. Clone the repository:
 
@@ -21,20 +21,7 @@ git clone https://github.com/youssefframy/aws-deploy-static-site.git
 cd aws-deploy-static-site
 ```
 
-2. Update the constants in `main.go`:
-
-```go
-const (
-    bucketName            = "your-bucket-name"           // Unique S3 bucket name
-    websiteFolderPath     = "path/to/your/website"      // Local path to your website files
-    cloudfrontDescription = "your-site-description"      // Description for CloudFront distribution
-    region                = "your-aws-region"            // AWS region (e.g., "us-east-1")
-)
-```
-
-## Installation
-
-Install dependencies:
+2. Install dependencies:
 
 ```bash
 go mod download
@@ -48,11 +35,18 @@ go mod download
    - Environment variables (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`)
    - IAM role (if running on AWS infrastructure)
 
-2. Build and run the application:
+2. Run the application:
 
 ```bash
 go run main.go
 ```
+
+3. Follow the interactive prompts:
+   - Enter AWS profile name (optional, press Enter for default)
+   - Enter S3 bucket name (required)
+   - Enter local path to your website files (required)
+   - Enter CloudFront distribution description (optional)
+   - Enter AWS region (required, e.g., "us-east-1")
 
 The tool will:
 
