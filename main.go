@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"bufio"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
@@ -19,16 +21,63 @@ import (
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-const (
-	bucketName            = "example-bucket-name"
-	websiteFolderPath     = "relative/path/to/your/website"
-	cloudfrontDescription = "description"
-	region                = "region"
+var (
+	bucketName            string
+	websiteFolderPath     string
+	cloudfrontDescription string
+	region                string
+	profileName           string
 )
 
 func main() {
-	// Load AWS configuration
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	reader := bufio.NewReader(os.Stdin)
+
+	// Prompt for AWS profile
+	fmt.Print("🔑 Enter AWS profile name (press Enter for default): ")
+	profileName, _ = reader.ReadString('\n')
+	profileName = strings.TrimSpace(profileName)
+
+	// Prompt for bucket name
+	fmt.Print("🪣 Enter S3 bucket name: ")
+	bucketName, _ = reader.ReadString('\n')
+	bucketName = strings.TrimSpace(bucketName)
+
+	// Prompt for website folder path
+	fmt.Print("📂 Enter local path to your website files: ")
+	websiteFolderPath, _ = reader.ReadString('\n')
+	websiteFolderPath = strings.TrimSpace(websiteFolderPath)
+
+	// Prompt for CloudFront description
+	fmt.Print("💬 Enter CloudFront distribution description (press Enter for default): ")
+	cloudfrontDescription, _ = reader.ReadString('\n')
+	cloudfrontDescription = strings.TrimSpace(cloudfrontDescription)
+	if cloudfrontDescription == "" {
+		cloudfrontDescription = fmt.Sprintf("CloudFront distribution for %s", bucketName)
+	}
+
+	// Prompt for AWS region
+	fmt.Print("🌐 Enter AWS region (e.g., us-east-1): ")
+	region, _ = reader.ReadString('\n')
+	region = strings.TrimSpace(region)
+
+	// Validate inputs
+	if bucketName == "" || websiteFolderPath == "" || region == "" {
+		log.Fatal("Error: All inputs except description are required")
+	}
+
+	// Update AWS configuration to include profile option
+	var cfg aws.Config
+	var err error
+	if profileName != "" {
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion(region),
+			config.WithSharedConfigProfile(profileName),
+		)
+	} else {
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion(region),
+		)
+	}
 	if err != nil {
 		log.Fatalf("Unable to load SDK config: %v", err)
 	}

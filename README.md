@@ -1,4 +1,3 @@
-````markdown
 # AWS Static Site Deployment Tool
 
 A Go-based CLI tool that automates the deployment of static websites to AWS using S3 and CloudFront.
@@ -93,8 +92,3 @@ If you encounter issues:
 2. Verify the bucket name is globally unique
 3. Check if the specified region supports all required services
 4. Ensure the website folder path is correct and contains your static files
-
-```
-
-```
-````
