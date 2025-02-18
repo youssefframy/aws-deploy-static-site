@@ -88,39 +88,51 @@ func main() {
 	iamClient := iam.NewFromConfig(cfg)
 
 	// Create S3 bucket
+	fmt.Printf("📦 Creating S3 bucket '%s'...\n", bucketName)
 	bucket, err := createS3Bucket(context.TODO(), s3Client)
 	if err != nil {
 		log.Fatalf("Failed to create S3 bucket: %v", err)
 	}
+	fmt.Printf("✅ S3 bucket created successfully\n\n")
 
 	// Create Origin Access Control
+	fmt.Printf("🔒 Creating Origin Access Control...\n")
 	oacId, err := createOriginAccessControl(context.TODO(), cfClient)
 	if err != nil {
 		log.Fatalf("Failed to create Origin Access Control: %v", err)
 	}
+	fmt.Printf("✅ Origin Access Control created successfully\n\n")
 
 	// Create CloudFront distribution
+	fmt.Printf("☁️  Creating CloudFront distribution...\n")
 	distribution, err := createCloudFrontDistribution(context.TODO(), cfClient, bucket, oacId)
 	if err != nil {
 		log.Fatalf("Failed to create CloudFront distribution: %v", err)
 	}
+	fmt.Printf("✅ CloudFront distribution created successfully\n\n")
 
 	// Create and attach bucket policy
+	fmt.Printf("📜 Attaching bucket policy...\n")
 	err = attachBucketPolicy(context.TODO(), s3Client, iamClient, bucket, distribution.Id)
 	if err != nil {
 		log.Fatalf("Failed to attach bucket policy: %v", err)
 	}
+	fmt.Printf("✅ Bucket policy attached successfully\n\n")
 
 	// Upload website files
+	fmt.Printf("📤 Uploading website files...\n")
 	err = uploadWebsiteFiles(context.TODO(), s3Client)
 	if err != nil {
 		log.Fatalf("Failed to upload website files: %v", err)
 	}
+	fmt.Printf("✅ Website files uploaded successfully\n\n")
 
-	fmt.Printf("Deployment completed successfully!\n")
-	fmt.Printf("Bucket Name: %s\n", bucketName)
-	fmt.Printf("Distribution ID: %s\n", *distribution.Id)
-	fmt.Printf("Distribution Domain Name: %s\n", *distribution.DomainName)
+	fmt.Printf("🎉 Deployment completed successfully!\n")
+	fmt.Printf("📋 Summary:\n")
+	fmt.Printf("   Bucket Name: %s\n", bucketName)
+	fmt.Printf("   Distribution ID: %s\n", *distribution.Id)
+	fmt.Printf("   Distribution Domain Name: %s\n", *distribution.DomainName)
+	fmt.Printf("\n⏳ Note: It may take up to 15 minutes for the CloudFront distribution to be fully deployed\n")
 }
 
 func createS3Bucket(ctx context.Context, client *s3.Client) (*string, error) {
@@ -262,6 +274,7 @@ func uploadWebsiteFiles(ctx context.Context, client *s3.Client) error {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
+	fileCount := 0
 	err = filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -284,18 +297,24 @@ func uploadWebsiteFiles(ctx context.Context, client *s3.Client) error {
 		}
 
 		// Upload file to S3
+		fmt.Printf("   Uploading: %s\n", relPath)
 		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(relPath),
-			Body:   bytes.NewReader(content),
+			Bucket:       aws.String(bucketName),
+			Key:         aws.String(relPath),
+			Body:        bytes.NewReader(content),
 			CacheControl: aws.String("public, max-age=31536000, s-maxage=31536000"),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to upload file %s: %w", relPath, err)
 		}
 
+		fileCount++
 		return nil
 	})
+
+	if err == nil {
+		fmt.Printf("   Total files uploaded: %d\n", fileCount)
+	}
 
 	return err
 }
