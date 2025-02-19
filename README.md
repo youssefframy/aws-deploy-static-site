@@ -2,7 +2,7 @@
 
 A powerful CLI tool that simplifies the deployment of static websites and Single Page Applications (SPAs) to AWS using S3 and CloudFront.
 
-![Deploy Static Site Demo](deploy-static-demo.gif)
+![Deploy SPA Demo](deploy-spa-demo.gif)
 
 ## Features
 
