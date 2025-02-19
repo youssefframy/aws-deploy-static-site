@@ -35,7 +35,7 @@ A powerful CLI tool that simplifies the deployment of static websites and Single
 
 3. Run the executable and follow the interactive prompts
 
-### Option 2: Build from Source
+### Option 2: Run Directly from Source
 
 #### Prerequisites
 
@@ -46,25 +46,26 @@ A powerful CLI tool that simplifies the deployment of static websites and Single
   - CloudFront: CreateDistribution, CreateOriginAccessControl
   - IAM: GetUser
 
-#### Installation
+#### Installation & Usage
 
-1. Clone the repository:
+1. Install Go (if not already installed):
+
+   - Download from [golang.org/dl](https://golang.org/dl)
+   - Verify installation: `go version`
+
+2. Clone and run the project:
 
 ```bash
+# Clone the repository
 git clone https://github.com/youssefframy/aws-deploy-static-site.git
 cd aws-deploy-static-site
-```
 
-2. Build the project:
+# Install dependencies
+go mod tidy
+go mod download
 
-```bash
-go build -o aws-deploy ./cmd/aws-deploy
-```
-
-3. Run the tool:
-
-```bash
-./aws-deploy
+# Run directly with Go
+go run main.go
 ```
 
 ## Usage Guide

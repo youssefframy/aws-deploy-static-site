@@ -193,12 +193,15 @@ func getRegion() (string, error) {
 	return result, err
 }
 
-// Additional prompt functions...
 
 func DisplayConfigSummary(config *Config) {
 	fmt.Println("--------------------------------")
 	fmt.Printf("\n%s\n", "Configuration Summary:")
-	fmt.Printf("⚙️ Deployment Type: %s\n", config.DeploymentType)
+	if config.DeploymentType == "1" {
+		fmt.Printf("⚙️ Deployment Type: %s\n", "Static Website (Basic)")
+	} else {
+		fmt.Printf("⚙️ Deployment Type: %s\n", "Single Page Application (SPA)")
+	}
 	fmt.Printf("🔑 AWS Profile: %s\n", config.ProfileName)
 	fmt.Printf("🪣 S3 Bucket: %s\n", config.BucketName)
 	fmt.Printf("📂 Website Path: %s\n", config.WebsiteFolderPath)
