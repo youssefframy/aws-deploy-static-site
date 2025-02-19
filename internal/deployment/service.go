@@ -89,6 +89,6 @@ func (s *Service) DisplaySummary() {
 	fmt.Printf("📋 Summary:\n")
 	fmt.Printf("   Bucket Name: %s\n", s.config.BucketName)
 	fmt.Printf("   Distribution ID: %s\n", *s.distributionID)
-	fmt.Printf("   Distribution Domain Name: %s\n", *s.distribution)
+	fmt.Printf("   Distribution Domain Name: https://%s\n", *s.distribution)
 	fmt.Printf("\n⏳ Note: It may take up to 15 minutes for the CloudFront distribution to be fully deployed\n")
 }

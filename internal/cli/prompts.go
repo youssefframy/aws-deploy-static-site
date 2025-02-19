@@ -58,7 +58,7 @@ func GetUserInput() (*Config, error) {
 
 func getDeploymentType() (string, error) {
 	prompt := promptui.Select{
-		Label: "Select deployment type",
+		Label: "Select deployment type: ",
 		Items: []string{
 			"Static Website (Basic)",
 			"Single Page Application (SPA)",
@@ -88,7 +88,7 @@ func getAWSProfile() (string, error) {
 	}
 
 	prompt := promptui.Prompt{
-		Label:     "🔑 AWS Profile",
+		Label:     "🔑 AWS Profile: ",
 		Default:   "default",
 		Templates: templates,
 		Validate: func(input string) error {
@@ -97,8 +97,8 @@ func getAWSProfile() (string, error) {
 			}
 			return nil
 		},
+		Pointer: promptui.PipeCursor,
 	}
-
 	return prompt.Run()
 }
 
@@ -111,7 +111,7 @@ func getBucketName() (string, error) {
 	}
 
 	prompt := promptui.Prompt{
-		Label:     "🪣 S3 Bucket Name",
+		Label:     "🪣 S3 Bucket Name: ",
 		Templates: templates,
 		Validate: func(input string) error {
 			if strings.TrimSpace(input) == "" {
@@ -119,8 +119,8 @@ func getBucketName() (string, error) {
 			}
 			return nil
 		},
+		Pointer: promptui.PipeCursor,
 	}
-
 	return prompt.Run()
 }
 
@@ -133,7 +133,7 @@ func getWebsitePath() (string, error) {
 	}
 
 	prompt := promptui.Prompt{
-		Label:     "📂 Website Folder Path",
+		Label:     "📂 Website Folder Path: ",
 		Templates: templates,
 		Validate: func(input string) error {
 			if strings.TrimSpace(input) == "" {
@@ -141,6 +141,7 @@ func getWebsitePath() (string, error) {
 			}
 			return nil
 		},
+		Pointer: promptui.PipeCursor,
 	}
 
 	return prompt.Run()
@@ -155,7 +156,7 @@ func getCloudFrontDescription(bucketName string) (string, error) {
 	}
 
 	prompt := promptui.Prompt{
-		Label:     "💬 CloudFront Distribution Description",
+		Label:     "💬 CloudFront Distribution Description: ",
 		Default:   fmt.Sprintf("Distribution for %s", bucketName),
 		Templates: templates,
 		Validate: func(input string) error {
@@ -164,6 +165,7 @@ func getCloudFrontDescription(bucketName string) (string, error) {
 			}
 			return nil
 		},
+		Pointer: promptui.PipeCursor,
 	}
 
 	return prompt.Run()
@@ -171,7 +173,7 @@ func getCloudFrontDescription(bucketName string) (string, error) {
 
 func getRegion() (string, error) {
 	prompt := promptui.Select{
-		Label: "🌐 Select AWS Region",
+		Label: "🌐 Select AWS Region: ",
 		Items: []string{
 			"us-east-1", "us-east-2", "us-west-1", "us-west-2",
 			"eu-west-1", "eu-west-2", "eu-central-1",
@@ -184,6 +186,7 @@ func getRegion() (string, error) {
 			Selected: "✔ {{ . | green }}",
 		},
 		HideHelp: true,
+		Pointer: promptui.PipeCursor,
 	}
 
 	_, result, err := prompt.Run()
