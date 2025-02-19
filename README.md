@@ -1,20 +1,52 @@
 # AWS Static Site Deployment Tool
 
-A Go-based CLI tool that automates the deployment of static websites to AWS using S3 and CloudFront.
+A powerful CLI tool that simplifies the deployment of static websites and Single Page Applications (SPAs) to AWS using S3 and CloudFront.
 
 ![Deploy Static Site Demo](deploy-static-demo.gif)
 
-## Prerequisites
+## Features
+
+- 🚀 One-command deployment process
+- 🔒 Secure by default with CloudFront Origin Access Control
+- 📱 Support for both static websites and SPAs
+- 💨 Optimal caching configuration
+- 🌐 HTTPS enabled by default
+- 🎯 Interactive CLI interface
+
+## Quick Start
+
+### Option 1: Pre-built Binary
+
+1. Download the latest release for your platform:
+
+   - [Windows (64-bit)](https://github.com/youssefframy/aws-deploy-static-site/releases/latest/download/aws-deploy-win-x64.exe)
+   - [macOS (64-bit)](https://github.com/youssefframy/aws-deploy-static-site/releases/latest/download/aws-deploy-macos-x64)
+   - [Linux (64-bit)](https://github.com/youssefframy/aws-deploy-static-site/releases/latest/download/aws-deploy-linux-x64)
+
+2. Configure AWS credentials using one of these methods:
+
+   - AWS CLI: `aws configure`
+   - Environment variables:
+     ```bash
+     export AWS_ACCESS_KEY_ID="your_access_key"
+     export AWS_SECRET_ACCESS_KEY="your_secret_key"
+     ```
+   - IAM role (if running on AWS infrastructure)
+
+3. Run the executable and follow the interactive prompts
+
+### Option 2: Build from Source
+
+#### Prerequisites
 
 - Go 1.24 or later
-- AWS CLI configured with appropriate credentials
-- AWS account with permissions to:
-  - Create and manage S3 buckets
-  - Create and manage CloudFront distributions
-  - Create and manage IAM policies
-  - Create Origin Access Control
+- AWS credentials configured
+- Required AWS permissions:
+  - S3: CreateBucket, PutObject, PutBucketPolicy
+  - CloudFront: CreateDistribution, CreateOriginAccessControl
+  - IAM: GetUser
 
-## Installation
+#### Installation
 
 1. Clone the repository:
 
@@ -23,68 +55,86 @@ git clone https://github.com/youssefframy/aws-deploy-static-site.git
 cd aws-deploy-static-site
 ```
 
-2. Install dependencies:
+2. Build the project:
 
 ```bash
-go mod download
+go build -o aws-deploy ./cmd/aws-deploy
 ```
 
-## Usage
-
-1. Ensure your AWS credentials are configured either through:
-
-   - AWS CLI (`aws configure`)
-   - Environment variables (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`)
-   - IAM role (if running on AWS infrastructure)
-
-2. Run the application:
+3. Run the tool:
 
 ```bash
-go run main.go
+./aws-deploy
 ```
 
-3. Follow the interactive prompts:
-   - Enter AWS profile name (optional, press Enter for default)
-   - Enter S3 bucket name (required)
-   - Enter local path to your website files (required)
-   - Enter CloudFront distribution description (optional)
-   - Enter AWS region (required, e.g., "us-east-1")
+## Usage Guide
 
-The tool will:
+The tool provides an interactive CLI interface that will guide you through the deployment process:
 
-- Create an S3 bucket
-- Configure the bucket for website hosting
-- Create a CloudFront distribution
-- Set up Origin Access Control
-- Upload your website files
-- Configure proper caching and security settings
+1. Select deployment type:
 
-## Output
+   - Static Website (Basic)
+   - Single Page Application (SPA)
 
-Upon successful deployment, the tool will display:
+2. Configure deployment settings:
 
-- Bucket name
-- Distribution ID
-- CloudFront domain name (your website URL)
+   - AWS Profile (optional)
+   - S3 Bucket Name
+   - Website Files Location
+   - CloudFront Distribution Description
+   - AWS Region
+
+3. Wait for deployment completion (typically 10-15 minutes for CloudFront propagation)
+
+## Architecture
+
+The deployment process:
+
+1. Creates a private S3 bucket
+2. Configures website hosting settings
+3. Uploads your static files with optimal caching headers
+4. Creates a CloudFront distribution with Origin Access Control
+5. Configures security policies and routing rules
 
 ## Security Features
 
-- S3 bucket is private by default
-- CloudFront Origin Access Control (OAC) for secure S3 access
-- HTTPS-only access through CloudFront
-- Public access blocking on S3 bucket
-
-## Notes
-
-- The first deployment may take 10-15 minutes for CloudFront distribution to fully propagate
-- Website files are cached with a default TTL of 1 year for optimal performance
-- The tool handles SPA (Single Page Application) routing by redirecting 404s to index.html
+- ✅ Private S3 bucket with public access blocked
+- ✅ CloudFront Origin Access Control (OAC)
+- ✅ HTTPS-only access
+- ✅ Secure IAM policies
+- ✅ Custom error handling for SPAs
 
 ## Troubleshooting
 
-If you encounter issues:
+Common issues and solutions:
 
-1. Ensure AWS credentials have sufficient permissions
-2. Verify the bucket name is globally unique
-3. Check if the specified region supports all required services
-4. Ensure the website folder path is correct and contains your static files
+1. **Access Denied**
+
+   - Verify AWS credentials are configured correctly
+   - Ensure IAM user has required permissions
+
+2. **Bucket Creation Failed**
+
+   - Check if bucket name is globally unique
+   - Verify selected region supports all services
+
+3. **Upload Issues**
+
+   - Confirm website folder path is correct
+   - Check file permissions
+
+4. **CloudFront Errors**
+   - Allow 10-15 minutes for distribution deployment
+   - Verify domain name resolution
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For bugs and feature requests, please [open an issue](https://github.com/youssefframy/aws-deploy-static-site/issues).
