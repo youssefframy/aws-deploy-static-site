@@ -17,7 +17,7 @@ A powerful CLI tool that simplifies the deployment of static websites and Single
 
 ### Option 1: Pre-built Binary
 
-1. Download the latest release for your platform:
+1. Download the latest release for your platform (Operating System):
 
    - [Windows (64-bit)](https://github.com/youssefframy/aws-deploy-static-site/releases/latest/download/aws-deploy-win-x64.exe)
    - [macOS (64-bit)](https://github.com/youssefframy/aws-deploy-static-site/releases/latest/download/aws-deploy-macos-x64)
